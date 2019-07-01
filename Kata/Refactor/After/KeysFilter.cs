@@ -1,26 +1,23 @@
 using System.Collections.Generic;
 using System.Linq;
+using Refactor.After;
 
-namespace Refactor.After
+namespace Kata.Refactor.After
 {
     public class KeysFilter
     {
         private ISessionService SessionService { get; set; }
-        
+
         public IList<string> Filter(IList<string> marks, bool isGoldenKey)
         {
-            return isGoldenKey ? FilterGoldenKeys(marks) : FilterSilverAndCopperKeys(marks);
+            return isGoldenKey ? FilterGoldenKey(marks) : FilterSilverAndCopperKeys(marks);
         }
 
-        public IList<string> FilterGoldenKeys(IList<string> marks)
+        public IList<string> FilterGoldenKey(IList<string> marks)
         {
             var filteredMarks = FilterMarkBasedOnSessionKey(marks, new List<string> { "GoldenKey" });
-            return FilterInvalidGoldenMarks(filteredMarks);
-        }
 
-        public IList<string> FilterSilverAndCopperKeys(IList<string> marks)
-        {
-            return FilterMarkBasedOnSessionKey(marks, new List<string> { "SilverKey", "CopperKey" });
+            return FilterInvalidGoldenMarks(filteredMarks); ;
         }
 
         private List<string> FilterMarkBasedOnSessionKey(IList<string> marks, List<string> sessionKeys)
@@ -30,7 +27,8 @@ namespace Refactor.After
                 return new List<string>();
             }
 
-            return FilterValidMarks(marks, GetMarksBySessionKey(sessionKeys));
+            var filteredMarks = FilterValidMarks(marks, GetMarksBySessionKey(sessionKeys));
+            return filteredMarks;
         }
 
         private List<string> FilterValidMarks(IList<string> marks, List<string> validMarks)
@@ -46,22 +44,29 @@ namespace Refactor.After
         private List<string> GetMarksBySessionKey(List<string> sessionKeys)
         {
             return sessionKeys.Select(sessionKey => SessionService.Get<List<string>>(sessionKey))
-                .SelectMany(k => k) .ToList();
+                .SelectMany(k => k).ToList();
+        }
+
+        public IList<string> FilterSilverAndCopperKeys(IList<string> marks)
+        {
+
+            return FilterMarkBasedOnSessionKey(marks, new List<string> { "SilverKey", "CopperKey" });
         }
 
         private IList<string> FilterInvalidGoldenMarks(IList<string> marks)
         {
-            return marks.Where(mark => !IsGolden02Mark(mark) || marks.Any(x => IsGolden01MarkForSameCustomer(x, mark))).ToList();
+            return marks.Where(mark => !IsGolden02Mark(mark) || marks.Any(anotherMark => IsGolden01MarkForSameCustomer(mark, anotherMark)))
+                .ToList();
         }
 
-        private static bool IsGolden01MarkForSameCustomer(string mark, string anotherMark)
+        private static bool IsGolden01MarkForSameCustomer(string x, string mark)
         {
-            return IsGolden01Mark(mark) && IsSameCustomer(anotherMark, mark);
+            return IsGolden01Mark(mark) && IsSameCustomer(x, mark);
         }
 
-        private static bool IsSameCustomer(string mark, string anotherMark)
+        private static bool IsSameCustomer(string mark, string anOtherMark)
         {
-            return ParseCustomerFromMark(mark).Equals(ParseCustomerFromMark(anotherMark));
+            return ParseCustomerFromMark(mark).Equals(ParseCustomerFromMark(anOtherMark));
         }
 
         private static string ParseCustomerFromMark(string mark)
@@ -69,14 +74,14 @@ namespace Refactor.After
             return mark.Substring(4, 6);
         }
 
-        private static bool IsGolden01Mark(string x)
-        {
-            return x.StartsWith("GD01");
-        }
-
         private static bool IsGolden02Mark(string x)
         {
             return x.StartsWith("GD02");
+        }
+
+        private static bool IsGolden01Mark(string x)
+        {
+            return x.StartsWith("GD01");
         }
 
         private bool IsFakeKey(string mark)

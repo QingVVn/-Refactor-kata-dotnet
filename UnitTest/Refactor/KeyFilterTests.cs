@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Reflection;
+using Kata.Refactor.After;
 using Refactor.After;
 using Xunit;
 
